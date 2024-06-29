@@ -1,7 +1,7 @@
 ﻿namespace Serilog.Sinks.OpenObserve;
 
 using Configuration;
-using Core.Clients;
+using Core.Api;
 using Core.Configs;
 using Core.Formatters;
 using PeriodicBatching;

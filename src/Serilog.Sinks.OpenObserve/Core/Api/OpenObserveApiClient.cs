@@ -1,10 +1,9 @@
-﻿namespace Serilog.Sinks.OpenObserve.Core.Clients;
+﻿namespace Serilog.Sinks.OpenObserve.Core.Api;
 
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Abstractions;
-using Api;
 using Configs;
 using Utils;
 
