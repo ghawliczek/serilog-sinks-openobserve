@@ -32,10 +32,10 @@ jobs:
       run: dotnet build ./serilog-sinks-openobserve.sln --configuration Release --no-restore
 
     - name: Run tests
-      run: dotnet test ./serilog-sinks-openobserve.sln --no-restore --no-build --verbosity normal
+      run: dotnet test ./serilog-sinks-openobserve.sln  --configuration Release --no-restore --no-build --verbosity normal
 
     - name: Pack
-      run: dotnet pack --configuration Release --no-build --output ./nupkgs
+      run: dotnet pack ./serilog-sinks-openobserve.sln --configuration Release --no-build --output ./nupkgs
 
     - name: Publish NuGet package
       env:
