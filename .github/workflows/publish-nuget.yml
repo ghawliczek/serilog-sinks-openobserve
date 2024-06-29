@@ -1,0 +1,43 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-publish-nuget:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Extract version from tag
+      id: extract_version
+      run: echo "##[set-output name=VERSION;]${GITHUB_REF/refs\/tags\/v/}"
+
+    - name: Update version in .csproj
+      run: |
+        sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.extract_version.outputs.VERSION }}<\/Version>/" Serilog.Sinks.OpenObserve.csproj
+      shell: bash
+
+    - name: Install dependencies
+      run: dotnet restore ./serilog-sinks-openobserve.sln
+
+    - name: Build solution
+      run: dotnet build ./serilog-sinks-openobserve.sln --configuration Release --no-restore
+
+    - name: Run tests
+      run: dotnet test ./serilog-sinks-openobserve.sln --no-restore --no-build --verbosity normal
+
+    - name: Pack
+      run: dotnet pack --configuration Release --no-build --output ./nupkgs
+
+    - name: Publish NuGet package
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push ./nupkgs/*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
