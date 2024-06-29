@@ -22,7 +22,7 @@ jobs:
 
     - name: Update version in .csproj
       run: |
-        sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.extract_version.outputs.VERSION }}<\/Version>/" ./src/Serilog.Sinks.OpenObserve/Serilog.Sinks.OpenObserve.csproj
+        sed -i "s/<PackageVersion>.*<\/PackageVersion>/<PackageVersion>${{ steps.extract_version.outputs.VERSION }}<\/PackageVersion>/" ./src/Serilog.Sinks.OpenObserve/Serilog.Sinks.OpenObserve.csproj
       shell: bash
 
     - name: Install dependencies
