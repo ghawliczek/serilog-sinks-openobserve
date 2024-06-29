@@ -1,13 +1,25 @@
 ﻿namespace Serilog.Sinks.OpenObserve.Sinks.OpenObserve;
 
-using Contracts.Exceptions;
-using Core.Abstractions;
+using System.Net;
+using Core.Api.Abstractions;
+using Core.Configs;
 using Events;
 using Formatting;
 using PeriodicBatching;
 
-internal sealed class OpenObserveSink(IOpenObserveApiClient apiClient, ITextFormatter formatter) : IBatchedLogEventSink
+/// <summary>
+///     Represents the OpenObserve Serilog sink.
+/// </summary>
+/// <param name="configuration">The sink configuration.</param>
+/// <param name="api">The OpenObserve API client.</param>
+/// <param name="formatter">The text formatter.</param>
+internal sealed class OpenObserveSink(
+    OpenObserveSinkConfiguration configuration,
+    IOpenObserveApi api,
+    ITextFormatter formatter)
+    : IBatchedLogEventSink
 {
+    /// <inheritdoc />
     public async Task EmitBatchAsync(IEnumerable<LogEvent> batch)
     {
         var payload = new StringWriter();
@@ -17,13 +29,14 @@ internal sealed class OpenObserveSink(IOpenObserveApiClient apiClient, ITextForm
             formatter.Format(logEvent, payload);
         }
 
-        var result = await apiClient.SendEventsAsync(payload.ToString());
+        var result = await api.SendEventsAsync(configuration.Organization, configuration.StreamName, payload.ToString());
 
         if (result is not { IsSuccessful: true })
         {
-            throw new FailedEventsIngestionException(result?.Error ?? result?.ErrorDetail ?? result?.Message ?? "Unknown error");
+            throw new WebException(result.Error ?? result.ErrorDetail ?? result.Message ?? "Unknown error");
         }
     }
 
+    /// <inheritdoc />
     public Task OnEmptyBatchAsync() => Task.CompletedTask;
 }
