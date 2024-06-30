@@ -34,7 +34,7 @@ internal sealed class LogEventFormatterTests
     [Test]
     public void Format_ShouldCreateValidJsonString()
     {
-        const string expected =
+        var expected =
             "{" +
             "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
             ",\"_message\":\"\"" +
@@ -44,7 +44,8 @@ internal sealed class LogEventFormatterTests
             ",\"prop1\":\"value1\"" +
             ",\"prop2\":123" +
             ",\"prop3\":false" +
-            "}\r\n";
+            "}" +
+            $"{Environment.NewLine}";
 
         var writer = new StringWriter();
 
@@ -70,7 +71,7 @@ internal sealed class LogEventFormatterTests
             messageTemplate,
             [new LogEventProperty("Property", new ScalarValue("!@#$%^&*() \" \\ / . ,"))]);
 
-        const string expected =
+        var expected =
             "{" +
             "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
             ",\"_message\":\"Test text token !@#$%^&*() \\\" \\\\ / . , .\"" +
@@ -78,7 +79,8 @@ internal sealed class LogEventFormatterTests
             ",\"_id\":\"f980cdba\"" +
             ",\"_level\":\"Information\"" +
             ",\"Property\":\"!@#$%^&*() \\\" \\\\ / . ,\"" +
-            "}\r\n";
+            "}" +
+            $"{Environment.NewLine}";
 
         var writer = new StringWriter();
 
@@ -133,7 +135,7 @@ internal sealed class LogEventFormatterTests
                 new LogEventProperty("ElapsedMilliseconds", new ScalarValue(12.7291))
             ]);
 
-        const string expected =
+        var expected =
             "{" +
             "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
             ",\"_message\":\"Request finished HTTP/1.1 GET https://localhost:8080/v1/resource/property/otherUrlSegment - 301 0 null 12.7291ms\"" +
@@ -151,7 +153,8 @@ internal sealed class LogEventFormatterTests
             ",\"ContentLength\":0" +
             ",\"ContentType\":null" +
             ",\"ElapsedMilliseconds\":12.7291" +
-            "}\r\n";
+            "}" +
+            $"{Environment.NewLine}";
 
         var writer = new StringWriter();
 
@@ -175,7 +178,7 @@ internal sealed class LogEventFormatterTests
             messageTemplate,
             [new LogEventProperty("Property", new ScalarValue(@"C:\Path\To\Something\Nice"))]);
 
-        const string expected =
+        var expected =
             "{" +
             "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
             ",\"_message\":\"C:\\\\Path\\\\To\\\\Something\\\\Nice\"" +
@@ -183,7 +186,8 @@ internal sealed class LogEventFormatterTests
             ",\"_id\":\"2823c87b\"" +
             ",\"_level\":\"Information\"" +
             ",\"Property\":\"C:\\\\Path\\\\To\\\\Something\\\\Nice\"" +
-            "}\r\n";
+            "}" +
+            $"{Environment.NewLine}";
 
         var writer = new StringWriter();
 
