@@ -67,7 +67,7 @@ internal sealed class OpenObserveSinkTests
     [Test]
     public async Task EmitBatchAsync_ShouldUseEventsPayloadConstructedUsingFormatter()
     {
-        var formatter = new LogEntryFormatter();
+        var formatter = new LogEventFormatter();
         var expectedPayload = new StringWriter();
         formatter.Format(_logEvent, expectedPayload);
         formatter.Format(_logEvent, expectedPayload);

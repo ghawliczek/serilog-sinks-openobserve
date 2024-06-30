@@ -1,15 +1,18 @@
 ﻿namespace Serilog.Sinks.OpenObserve.Core.Formatters;
 
 using System.Globalization;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Events;
 using Expressions.Compilation.Linq;
 using Formatting;
 using Formatting.Json;
+using Parsing;
 
 /// <summary>
 ///     Represents the log entry formatter.
 /// </summary>
-internal sealed class LogEntryFormatter : ITextFormatter
+internal sealed class LogEventFormatter : ITextFormatter
 {
     private readonly JsonValueFormatter _jsonValueFormatter = new();
 
@@ -25,9 +28,7 @@ internal sealed class LogEntryFormatter : ITextFormatter
         output.Write($"\"{logEvent.Timestamp.UtcDateTime:O}\"");
 
         output.Write(",\"_message\":");
-        JsonValueFormatter.WriteQuotedJsonString(
-            logEvent.MessageTemplate.Render(logEvent.Properties, CultureInfo.InvariantCulture),
-            output);
+        RenderMessageTemplateWithoutDoubleQuotes(logEvent, output);
 
         output.Write(",\"_template\":");
         JsonValueFormatter.WriteQuotedJsonString(logEvent.MessageTemplate.Text, output);
@@ -55,9 +56,46 @@ internal sealed class LogEntryFormatter : ITextFormatter
             output.Write(',');
             JsonValueFormatter.WriteQuotedJsonString(name, output);
             output.Write(':');
+
+            if (logEvent.Properties.TryGetValue(name, out var propertyValue) &&
+                propertyValue is ScalarValue { Value: string str })
+            {
+                output.Write($"\"{JsonEncodedText.Encode(str, JavaScriptEncoder.UnsafeRelaxedJsonEscaping)}\"");
+                continue;
+            }
+
             _jsonValueFormatter.Format(property.Value, output);
         }
 
-        output.Write("}\n");
+        output.Write("}");
+        output.WriteLine();
+    }
+
+    private static void RenderMessageTemplateWithoutDoubleQuotes(LogEvent logEvent, TextWriter output)
+    {
+        output.Write('"');
+
+        foreach (var messageTemplateToken in logEvent.MessageTemplate.Tokens)
+        {
+            if (messageTemplateToken is TextToken textToken)
+            {
+                output.Write(textToken.Text);
+                continue;
+            }
+
+            if (messageTemplateToken is PropertyToken propertyToken)
+            {
+                if (logEvent.Properties.TryGetValue(propertyToken.PropertyName, out var propertyValue) &&
+                    propertyValue is ScalarValue { Value: string str })
+                {
+                    output.Write(JsonEncodedText.Encode(str, JavaScriptEncoder.UnsafeRelaxedJsonEscaping).ToString());
+                    continue;
+                }
+
+                propertyToken.Render(logEvent.Properties, output, CultureInfo.InvariantCulture);
+            }
+        }
+
+        output.Write('"');
     }
 }

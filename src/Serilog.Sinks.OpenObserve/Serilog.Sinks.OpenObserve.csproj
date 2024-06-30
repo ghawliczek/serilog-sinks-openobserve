@@ -8,26 +8,24 @@
   </PropertyGroup>
 
   <PropertyGroup>
-		<PackageVersion>1.0.0</PackageVersion>
-		<Authors>Grzegorz Hawliczek</Authors>
-		<Copyright>Copyright © Serilog Contributors 2014-2022</Copyright>
-		<Description>The OpenObserve sink for Serilog</Description>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Grzegorz Hawliczek</Authors>
+    <Description>The OpenObserve sink for Serilog</Description>
     <RepositoryType>git</RepositoryType>
-		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-		<PackageId>Serilog.Sinks.OpenObserve</PackageId>
-		<PackageProjectUrl>http://serilog.net</PackageProjectUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageId>Serilog.Sinks.OpenObserve</PackageId>
     <PackageProjectUrl>https://github.com/ghawliczek/serilog-sinks-openobserve</PackageProjectUrl>
-		<PackageIcon>serilog-sink-nuget.png</PackageIcon>
-		<PackageTags>serilog, openobserve</PackageTags>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>serilog-sink-nuget.png</PackageIcon>
+    <PackageTags>serilog, openobserve</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="serilog-sink-nuget.png" Pack="true" Visible="false" PackagePath="" />
+    <None Include="serilog-sink-nuget.png" Pack="true" Visible="false" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -52,7 +52,7 @@ public static class LoggerConfigurationOpenObserveExtensions
                     AuthorizationHeaderValueGetter = (_, _) =>
                         Task.FromResult(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{key}")))
                 }),
-            new LogEntryFormatter());
+            new LogEventFormatter());
 
         return loggerConfiguration.Sink(new PeriodicBatchingSink(sink, new PeriodicBatchingSinkOptions()));
     }
