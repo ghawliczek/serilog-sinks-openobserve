@@ -23,6 +23,9 @@ internal sealed class LogEventFormatterTests
     [SetUp]
     public void Setup() => _formatter = new LogEventFormatter();
 
+    [TearDown]
+    public void Teardown() => _formatter.Dispose();
+
     [Test]
     public void Format_ShouldThrowArgumentException_WhenLogEventIsNull() =>
         Assert.Throws<ArgumentNullException>(() => _formatter.Format(null!, new StringWriter()));
@@ -55,7 +58,7 @@ internal sealed class LogEventFormatterTests
     }
 
     [Test]
-    public void Format_ShouldCorrectlyEscapeSpecialCharactersInMessage()
+    public void Format_ShouldEscapeSpecialCharactersInMessage()
     {
         var messageTemplate = new MessageTemplate(
         [
@@ -90,7 +93,7 @@ internal sealed class LogEventFormatterTests
     }
 
     [Test]
-    public void Format_ShouldRenderStringPropertiesWithoutWrappingThemInDoubleQuotes()
+    public void Format_ShouldNotWrapStringPropertiesInDoubleQuotes()
     {
         var messageTemplate = new MessageTemplate(
         [
@@ -164,7 +167,7 @@ internal sealed class LogEventFormatterTests
     }
 
     [Test]
-    public void Format_ShouldCorrectlyEscapePaths()
+    public void Format_ShouldEscapePaths()
     {
         var messageTemplate = new MessageTemplate(
         [
@@ -186,6 +189,165 @@ internal sealed class LogEventFormatterTests
             ",\"_id\":\"2823c87b\"" +
             ",\"_level\":\"Information\"" +
             ",\"Property\":\"C:\\\\Path\\\\To\\\\Something\\\\Nice\"" +
+            "}" +
+            $"{Environment.NewLine}";
+
+        var writer = new StringWriter();
+
+        _formatter.Format(logEvent, writer);
+
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Format_ShouldEscapeStructuredValues()
+    {
+        var messageTemplate = new MessageTemplate(
+        [
+            new PropertyToken("Error", "{@Error}"),
+            new TextToken(" "),
+            new PropertyToken("Error2", "{@Error2}")
+        ]);
+
+        var logEvent = new LogEvent(
+            DateTimeOffset.Parse("2024-06-29T22:22:50.2359921Z", CultureInfo.InvariantCulture),
+            LogEventLevel.Information,
+            null,
+            messageTemplate,
+            [
+                new LogEventProperty(
+                    "Error",
+                    new StructureValue(
+                        [
+                            new LogEventProperty("Code", new ScalarValue("Error.Code")),
+                            new LogEventProperty("Message", new ScalarValue("Error message."))
+                        ],
+                        "Error")),
+                new LogEventProperty(
+                    "Error2",
+                    new StructureValue(
+                        [
+                            new LogEventProperty("Code", new ScalarValue("Error.Code")),
+                            new LogEventProperty("Message", new ScalarValue("Error message."))
+                        ],
+                        "Error"))
+            ]);
+
+        var expected =
+            "{" +
+            "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
+            ",\"_message\":\"Error { Code: \\\"Error.Code\\\", Message: \\\"Error message.\\\" } Error { Code: \\\"Error.Code\\\", Message: \\\"Error message.\\\" }\"" +
+            ",\"_template\":\"{@Error} {@Error2}\"" +
+            ",\"_id\":\"940c23d6\"" +
+            ",\"_level\":\"Information\"" +
+            ",\"Error\":{\"Code\":\"Error.Code\",\"Message\":\"Error message.\",\"_typeTag\":\"Error\"}" +
+            ",\"Error2\":{\"Code\":\"Error.Code\",\"Message\":\"Error message.\",\"_typeTag\":\"Error\"}" +
+            "}" +
+            $"{Environment.NewLine}";
+
+        var writer = new StringWriter();
+
+        _formatter.Format(logEvent, writer);
+
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Format_ShouldEscapeDictionaryValues()
+    {
+        var messageTemplate = new MessageTemplate(
+        [
+            new PropertyToken("Dic", "{Dic}")
+        ]);
+
+        var logEvent = new LogEvent(
+            DateTimeOffset.Parse("2024-06-29T22:22:50.2359921Z", CultureInfo.InvariantCulture),
+            LogEventLevel.Information,
+            null,
+            messageTemplate,
+            [
+                new LogEventProperty(
+                    "Dic",
+                    new DictionaryValue(
+                    [
+                        new KeyValuePair<ScalarValue, LogEventPropertyValue>(new ScalarValue("dicProp1"), new ScalarValue(420)),
+                        new KeyValuePair<ScalarValue, LogEventPropertyValue>(new ScalarValue("dicProp2"), new ScalarValue("420")),
+                        new KeyValuePair<ScalarValue, LogEventPropertyValue>(
+                            new ScalarValue("dicProp3"),
+                            new DictionaryValue(
+                                [new KeyValuePair<ScalarValue, LogEventPropertyValue>(new ScalarValue("key"), new ScalarValue("value"))])),
+                        new KeyValuePair<ScalarValue, LogEventPropertyValue>(
+                            new ScalarValue("dicProp4"),
+                            new SequenceValue([new ScalarValue(1), new ScalarValue(2), new ScalarValue(69)])),
+                        new KeyValuePair<ScalarValue, LogEventPropertyValue>(
+                            new ScalarValue("dicProp5"),
+                            new StructureValue(
+                                [
+                                    new LogEventProperty("Code", new ScalarValue("Error.Code")),
+                                    new LogEventProperty("Message", new ScalarValue("Error message."))
+                                ],
+                                "Error"))
+                    ]))
+            ]);
+
+        var expected =
+            "{" +
+            "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
+            ",\"_message\":\"[(\\\"dicProp1\\\": 420), (\\\"dicProp2\\\": \\\"420\\\"), (\\\"dicProp3\\\": [(\\\"key\\\": \\\"value\\\")]), (\\\"dicProp4\\\": [1, 2, 69]), (\\\"dicProp5\\\": Error { Code: \\\"Error.Code\\\", Message: \\\"Error message.\\\" })]\"" +
+            ",\"_template\":\"{Dic}\"" +
+            ",\"_id\":\"df17ae2e\"" +
+            ",\"_level\":\"Information\"" +
+            ",\"Dic\":{\"dicProp1\":420,\"dicProp2\":\"420\",\"dicProp3\":{\"key\":\"value\"},\"dicProp4\":[1,2,69],\"dicProp5\":{\"Code\":\"Error.Code\",\"Message\":\"Error message.\",\"_typeTag\":\"Error\"}}" +
+            "}" +
+            $"{Environment.NewLine}";
+
+        var writer = new StringWriter();
+
+        _formatter.Format(logEvent, writer);
+
+        Assert.That(writer.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Format_ShouldEscapeSequenceValues()
+    {
+        var messageTemplate = new MessageTemplate(
+        [
+            new PropertyToken("Seq", "{Seq}")
+        ]);
+
+        var logEvent = new LogEvent(
+            DateTimeOffset.Parse("2024-06-29T22:22:50.2359921Z", CultureInfo.InvariantCulture),
+            LogEventLevel.Information,
+            null,
+            messageTemplate,
+            [
+                new LogEventProperty(
+                    "Seq",
+                    new SequenceValue(
+                    [
+                        new ScalarValue(69),
+                        new ScalarValue("69"),
+                        new SequenceValue([new ScalarValue(1), new ScalarValue(2), new ScalarValue(420)]),
+                        new StructureValue(
+                            [
+                                new LogEventProperty("Code", new ScalarValue("Error.Code")),
+                                new LogEventProperty("Message", new ScalarValue("Error message."))
+                            ],
+                            "Error"),
+                        new DictionaryValue(
+                            [new KeyValuePair<ScalarValue, LogEventPropertyValue>(new ScalarValue("key"), new ScalarValue("value"))])
+                    ]))
+            ]);
+
+        var expected =
+            "{" +
+            "\"_timestamp\":\"2024-06-29T22:22:50.2359921Z\"" +
+            ",\"_message\":\"[69, \\\"69\\\", [1, 2, 420], Error { Code: \\\"Error.Code\\\", Message: \\\"Error message.\\\" }, [(\\\"key\\\": \\\"value\\\")]]\"" +
+            ",\"_template\":\"{Seq}\"" +
+            ",\"_id\":\"88e8e2f7\"" +
+            ",\"_level\":\"Information\"" +
+            ",\"Seq\":[69,\"69\",[1,2,420],{\"Code\":\"Error.Code\",\"Message\":\"Error message.\",\"_typeTag\":\"Error\"},{\"key\":\"value\"}]" +
             "}" +
             $"{Environment.NewLine}";
 

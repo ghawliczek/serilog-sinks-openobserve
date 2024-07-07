@@ -12,9 +12,14 @@ using Parsing;
 /// <summary>
 ///     Represents the log entry formatter.
 /// </summary>
-internal sealed class LogEventFormatter : ITextFormatter
+internal sealed class LogEventFormatter : ITextFormatter, IDisposable, IAsyncDisposable
 {
     private readonly JsonValueFormatter _jsonValueFormatter = new();
+    private readonly StringWriter _stringWriter = new();
+
+    public async ValueTask DisposeAsync() => await _stringWriter.DisposeAsync();
+
+    public void Dispose() => _stringWriter.Dispose();
 
     /// <inheritdoc />
     public void Format(LogEvent logEvent, TextWriter output)
@@ -57,13 +62,6 @@ internal sealed class LogEventFormatter : ITextFormatter
             JsonValueFormatter.WriteQuotedJsonString(name, output);
             output.Write(':');
 
-            if (logEvent.Properties.TryGetValue(name, out var propertyValue) &&
-                propertyValue is ScalarValue { Value: string str })
-            {
-                output.Write($"\"{JsonEncodedText.Encode(str, JavaScriptEncoder.UnsafeRelaxedJsonEscaping)}\"");
-                continue;
-            }
-
             _jsonValueFormatter.Format(property.Value, output);
         }
 
@@ -71,7 +69,7 @@ internal sealed class LogEventFormatter : ITextFormatter
         output.WriteLine();
     }
 
-    private static void RenderMessageTemplateWithoutDoubleQuotes(LogEvent logEvent, TextWriter output)
+    private void RenderMessageTemplateWithoutDoubleQuotes(LogEvent logEvent, TextWriter output)
     {
         output.Write('"');
 
@@ -92,7 +90,9 @@ internal sealed class LogEventFormatter : ITextFormatter
                     continue;
                 }
 
-                propertyToken.Render(logEvent.Properties, output, CultureInfo.InvariantCulture);
+                propertyToken.Render(logEvent.Properties, _stringWriter, CultureInfo.InvariantCulture);
+                output.Write(JsonEncodedText.Encode(_stringWriter.ToString(), JavaScriptEncoder.UnsafeRelaxedJsonEscaping).ToString());
+                _stringWriter.GetStringBuilder().Clear();
             }
         }
 
